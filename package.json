@@ -1,0 +1,20 @@
+{
+  "name": "scrap-danfe",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Filipe Echeverrya",
+  "license": "MIT",
+  "scripts": {
+    "start": "sucrase-node src/main.ts",
+    "read": "sucrase-node src/modules/Reader.ts"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "puppeteer": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.22",
+    "@types/puppeteer": "^5.4.0",
+    "sucrase": "^3.16.0"
+  }
+}
