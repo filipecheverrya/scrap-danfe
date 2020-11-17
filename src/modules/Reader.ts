@@ -1,7 +1,9 @@
 import * as fs from 'fs';
 import * as cheerio from 'cheerio';
+import { v4 as uuidv4 } from 'uuid';
 
 interface iProduct {
+  id: string,
   code: string;
   title: string;
   quantity: string;
@@ -12,7 +14,7 @@ interface iProduct {
   }
 }
 
-function appendProduct($: cheerio.Root, row: cheerio.Cheerio): Array<iProduct> {
+function productParser($: cheerio.Root, row: cheerio.Cheerio): Array<iProduct> {
   const arr = [];
   const obj: iProduct = {
     price: {}
@@ -28,6 +30,7 @@ function appendProduct($: cheerio.Root, row: cheerio.Cheerio): Array<iProduct> {
 
   row.each((i: number, el: cheerio.Element) => {
     const text = $(el).text();
+    obj.id = uuidv4();
     if (i > 3) {
       obj.price[map[i]] = text
       if (i === 5) return arr.push(obj);
@@ -38,6 +41,24 @@ function appendProduct($: cheerio.Root, row: cheerio.Cheerio): Array<iProduct> {
   return arr;
 }
 
+function getProductsParsed($: cheerio.Root) {
+  const products: Array<iProduct> = [];
+  
+  $('table.NFCCabecalho .NFCDetalhe_Item').each((i: number, el: cheerio.Element) => {
+    if ($(el).text().toLowerCase() === 'código') {
+      $(el).parents('.NFCCabecalho').find('tr').each((id: number, elem: cheerio.Element) => {
+        const isTableHeader: boolean = id === 0;
+        if (isTableHeader) return;
+        const columns: cheerio.Cheerio = $(elem).find('td');
+        const [prod] = productParser($, columns);
+        products.push(prod);
+      });
+    }
+  });
+  
+  return products;
+}
+
 function formatToHTML(file: string): string {
   return file
     .replace(/\\"/g, '"')
@@ -45,17 +66,10 @@ function formatToHTML(file: string): string {
 }
 
 function inspectFile(elementHtml: string) {
-  const $: cheerio.Root = cheerio.load(formatToHTML(elementHtml));
-  $('table.NFCCabecalho .NFCDetalhe_Item').each((i: number, el: cheerio.Element) => {
-    if ($(el).text().toLowerCase() === 'código') {
-      $(el).parents('.NFCCabecalho').find('tr').each((id: number, elem: cheerio.Element) => {
-        const isTableHeader: boolean = id === 0;
-        if (isTableHeader) return;
-        const columns: cheerio.Cheerio = $(elem).find('td');
-        console.log(...appendProduct($, columns));
-      });
-    }
-  });
+  const context: cheerio.Root = cheerio.load(formatToHTML(elementHtml));
+  const products: Array<iProduct> = getProductsParsed(context);
+
+  console.log(products);
 }
 
 function readFile(name: string) {
